@@ -133,9 +133,10 @@ def shorten_url(url, max_len=80):
 _ITEM_CSS = """<style>
 @import url('https://fonts.googleapis.com/css2?family=Prompt:wght@300;400;500;600&display=swap');
 * { margin:0; padding:0; box-sizing:border-box; }
-body { font-family: 'Prompt', Arial, sans-serif; background: transparent; padding: 2px 0; }
+body { font-family: 'Prompt', Arial, sans-serif; background: transparent; padding: 2px 0; overflow: hidden; }
 
-.ri { padding: 2px 0 6px 0; }
+.ri { padding: 2px 0 6px 0; position: relative; padding-right: 45px; transition: opacity 0.3s ease; }
+.ri.read-full { opacity: 0.4; }
 
 .site {
   font-size: 0.82rem;
@@ -179,15 +180,7 @@ body { font-family: 'Prompt', Arial, sans-serif; background: transparent; paddin
   white-space: nowrap;
   font-family: 'Prompt', Arial, sans-serif;
 }
-.st {
-  background: #e8f0fe;
-  border-color: #c5cfe8;
-  color: #174ea6;
-  max-width: 220px;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  cursor: help;
-}
+.st { background: #e8f0fe; border-color: #c5cfe8; color: #174ea6; max-width: 220px; overflow: hidden; text-overflow: ellipsis; cursor: help; }
 .tt { background: #e6f4ea; border-color: #b7dfba; color: #137333; }
 .dt { background: #fef7e0; border-color: #fbe4a0; color: #b06000; }
 
@@ -201,6 +194,28 @@ body { font-family: 'Prompt', Arial, sans-serif; background: transparent; paddin
 .snippet.read { opacity: 0.45; }
 
 .hl { font-weight: 700; color: #c5221f; }
+
+.check-btn {
+  position: absolute;
+  right: 0;
+  top: 50%;
+  transform: translateY(-50%);
+  width: 38px;
+  height: 38px;
+  border-radius: 50%;
+  border: 1px solid #c1c1c1;
+  background: white;
+  color: #c1c1c1;
+  font-size: 1.2rem;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  transition: all 0.2s;
+  box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+}
+.check-btn:hover { background: #e6f4ea; border-color: #34a853; color: #34a853; }
+.check-btn.read-btn { background: white; border: none; color: #34a853; font-weight: bold; cursor: default; box-shadow: none; font-size: 1.5rem; }
 </style>"""
 
 def render_item(item, idx, is_read=False):
@@ -218,13 +233,17 @@ def render_item(item, idx, is_read=False):
     dom_str  = _html.escape(domain(link))
     link_esc = _html.escape(link)
     read_cls = "read" if is_read else ""
+    full_read_cls = "read-full" if is_read else ""
 
     tf_span = f'<span class="tag tt">⏱ {_html.escape(tf_tag)}</span>' if tf_tag else ''
     dt_span = f'<span class="tag dt">📅 {_html.escape(found)}</span>'
     te_span = f'<span class="tag st" title="{safe_t}">{short_t}</span>' if st_tag else ''
 
+    btn_html = f'<div class="check-btn read-btn">✓</div>' if is_read else f'<button class="check-btn" id="btn{aid}" onclick="markRead(\'{aid}\');" title="ทำเครื่องหมายว่าอ่านแล้ว">✓</button>'
+
     html_src = f"""{_ITEM_CSS}
-<div class="ri">
+<div class="ri {full_read_cls}" id="ri{aid}">
+  {btn_html}
   <div class="site">🌐 {dom_str} — <small style="color:#9aa0a6">{short_u}</small></div>
   <div class="title {read_cls}">
     <a id="a{aid}" href="{link_esc}" target="_blank"
@@ -237,10 +256,22 @@ def render_item(item, idx, is_read=False):
 </div>
 <script>
 function markRead(id){{
+  var ri=document.getElementById('ri'+id);
+  var btn=document.getElementById('btn'+id);
+  
+  // Instant visual feedback
+  if(ri) {{ ri.classList.add('read-full'); }}
+  if(btn) {{ 
+    btn.className = 'check-btn read-btn'; 
+    btn.disabled = true; 
+    btn.onclick = null;
+  }}
+  
   var a=document.getElementById('a'+id);
   var s=document.getElementById('s'+id);
-  if(a){{a.style.color='#70757a';a.style.textDecoration='line-through';}}
-  if(s){{s.style.opacity='0.5';}}
+  if(a){{a.style.color='#9e9e9e';a.style.textDecoration='line-through';}}
+  
+  // Send to DB
   fetch('{SUPABASE_URL}/rest/v1/auctions?id=eq.'+id,{{
     method:'PATCH',keepalive:true,
     headers:{{'apikey':'{SUPABASE_KEY}','Authorization':'Bearer {SUPABASE_KEY}',
@@ -259,20 +290,8 @@ function markRead(id){{
     h += max(2, snip_len // 60) * 22    # snippet lines
     h += 14                         # padding
 
-    col_body, col_btn = st.columns([11, 1])
-    with col_body:
-        components.html(html_src, height=h, scrolling=False)
-    with col_btn:
-        st.markdown(f'<div style="height:{max(h-30,40)}px;display:flex;align-items:center;justify-content:center">', unsafe_allow_html=True)
-        if not is_read:
-            if st.button("✓", key=f"chk_{aid}", help="ทำเครื่องหมายว่าอ่านแล้ว"):
-                mark_and_rerun(aid)
-                st.rerun()
-        else:
-            st.markdown('<div style="color:#34a853;font-size:1.4rem;text-align:center;font-weight:bold">✓</div>', unsafe_allow_html=True)
-        st.markdown('</div>', unsafe_allow_html=True)
-
-    st.markdown('<hr style="border:none;border-top:1px solid #e8eaed;margin:2px 0 12px 0">', unsafe_allow_html=True)
+    components.html(html_src, height=h, scrolling=False)
+    st.markdown('<hr style="border:none;border-top:1px solid #e8eaed;margin:0 0 12px 0">', unsafe_allow_html=True)
 
 
 # ── SETTINGS HELPERS ──────────────────────────────────────
