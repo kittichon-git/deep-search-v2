@@ -3,13 +3,23 @@ from supabase import create_client, Client
 from dotenv import load_dotenv
 
 load_dotenv()
-SUPABASE_URL = os.getenv("SUPABASE_URL")
-SUPABASE_KEY = os.getenv("SUPABASE_KEY")
+
+def _get_secret(key):
+    """Try st.secrets first (Streamlit Cloud), fallback to os.environ (local)."""
+    try:
+        import streamlit as st
+        return st.secrets[key]
+    except Exception:
+        return os.getenv(key, '')
+
+SUPABASE_URL = _get_secret("SUPABASE_URL")
+SUPABASE_KEY = _get_secret("SUPABASE_KEY")
 
 if not SUPABASE_URL or not SUPABASE_KEY:
-    raise ValueError("Missing SUPABASE_URL or SUPABASE_KEY in .env file")
+    raise ValueError("Missing SUPABASE_URL or SUPABASE_KEY. Set in .env (local) or Streamlit Cloud secrets.")
 
 supabase: Client = create_client(SUPABASE_URL, SUPABASE_KEY)
+
 
 # ─── AUCTIONS ───────────────────────────────────────────
 def get_auctions(unread_only=True):

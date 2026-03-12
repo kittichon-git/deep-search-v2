@@ -7,8 +7,15 @@ import html
 from dotenv import load_dotenv
 load_dotenv()
 
-SUPABASE_URL = os.getenv("SUPABASE_URL")
-SUPABASE_KEY = os.getenv("SUPABASE_KEY")
+# Support Streamlit Cloud (st.secrets) and local .env
+def _get_secret(key):
+    try:
+        return st.secrets[key]
+    except Exception:
+        return os.getenv(key, '')
+
+SUPABASE_URL = _get_secret("SUPABASE_URL")
+SUPABASE_KEY = _get_secret("SUPABASE_KEY")
 
 from database import (
     get_auctions, mark_auction_as_read,
