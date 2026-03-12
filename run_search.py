@@ -41,33 +41,59 @@ import urllib.parse
 
 def perform_search(query_str, tbs):
     """
-    Call Serper.dev API using the same logic as daily_search.py
-    Fetches up to 100 results in a single request.
+    Call Serper.dev API to fetch up to 100 results.
+    We use a pagination loop (up to 10 pages) because some server regions
+    (like GitHub Actions) may restrict Google results to 10 per page
+    even if num=100 is requested.
     """
     if not SERPER_API_KEY or SERPER_API_KEY == 'your_serper_api_key_here':
         print("  ! SERPER_API_KEY is missing or not set in .env")
         return []
 
     url = "https://google.serper.dev/search"
-    payload = json.dumps({
-        "q": query_str,
-        "tbs": tbs if tbs != "any" else "",
-        "gl": "th",
-        "hl": "th",
-        "num": 100
-    })
-    headers = {
-        'X-API-KEY': SERPER_API_KEY, 
-        'Content-Type': 'application/json'
-    }
-    try:
-        req = urllib.request.Request(url, data=payload.encode('utf-8'), headers=headers, method='POST')
-        with urllib.request.urlopen(req) as response:
-            res_data = response.read().decode('utf-8')
-            return json.loads(res_data).get("organic", [])
-    except Exception as e:
-        print(f"  ! API error: {e}")
-        return []
+    all_results = []
+    
+    for page in range(1, 11):  # Pages 1 to 10
+        payload = json.dumps({
+            "q": query_str,
+            "tbs": tbs if tbs != "any" else "",
+            "gl": "th",
+            "hl": "th",
+            "num": 100,
+            "page": page
+        })
+        headers = {
+            'X-API-KEY': SERPER_API_KEY,
+            'Content-Type': 'application/json'
+        }
+        
+        try:
+            req = urllib.request.Request(url, data=payload.encode('utf-8'), headers=headers, method='POST')
+            with urllib.request.urlopen(req, timeout=30) as response:
+                response_data = response.read().decode('utf-8')
+                data = json.loads(response_data)
+                
+            organic = data.get("organic", [])
+            if organic:
+                all_results.extend(organic)
+                
+            # If we received fewer than 10 results in this chunk, we've likely hit the end
+            if len(organic) < 10:
+                break
+                
+        except Exception as e:
+            print(f"  ! Error during API request (page {page}): {e}")
+            break
+            
+    # Deduplicate results by link if any overlaps occurred
+    seen = set()
+    unique_results = []
+    for r in all_results:
+        if r.get("link") not in seen:
+            seen.add(r.get("link"))
+            unique_results.append(r)
+            
+    return unique_results[:100]
 
 
 
