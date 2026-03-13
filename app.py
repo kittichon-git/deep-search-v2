@@ -135,7 +135,7 @@ _ITEM_CSS = """<style>
 * { margin:0; padding:0; box-sizing:border-box; }
 body { font-family: 'Prompt', Arial, sans-serif; background: transparent; padding: 2px 0; overflow: hidden; }
 
-.ri { padding: 2px 0 6px 0; position: relative; padding-right: 45px; transition: opacity 0.3s ease; }
+.ri { padding: 2px 0 2px 0; position: relative; padding-right: 45px; transition: opacity 0.3s ease; }
 .ri.read-full { opacity: 0.4; }
 
 .site {
@@ -291,7 +291,7 @@ function markRead(id){{
     h += 14                         # padding
 
     components.html(html_src, height=h, scrolling=False)
-    st.markdown('<hr style="border:none;border-top:1px solid #e8eaed;margin:0 0 12px 0">', unsafe_allow_html=True)
+    st.markdown('<hr style="border:none;border-top:1px solid #e8eaed;margin:0 0 18px 0">', unsafe_allow_html=True)
 
 
 # ── SETTINGS HELPERS ──────────────────────────────────────
