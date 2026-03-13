@@ -432,9 +432,7 @@ def main():
     with tab_inbox:
         auctions = get_auctions(unread_only=True)
         all_ = get_auctions(unread_only=False)
-        read_count = sum(1 for a in all_ if a.get('is_read'))
-        total = len(all_)
-        st.markdown(f'<div class="summary-bar">📊 พบทั้งหมด <b>{total}</b> รายการ — อ่านแล้ว <b>{read_count}</b> / {total}</div>', unsafe_allow_html=True)
+        st.markdown(f'<div class="summary-bar">📊 ข่าวใหม่ยังไม่อ่าน <b>{len(auctions)}</b> รายการ</div>', unsafe_allow_html=True)
         if not auctions:
             st.success("ไม่มีรายการใหม่ในขณะนี้ 🎉")
         else:
@@ -442,9 +440,8 @@ def main():
                 render_item(item, idx, is_read=False)
 
     with tab_read:
-        all_ = get_auctions(unread_only=False)
-        read = [a for a in all_ if a.get('is_read')]
-        st.markdown(f'<div class="summary-bar">✅ รายการที่อ่านแล้วทั้งหมด <b>{len(read)}</b> รายการ</div>', unsafe_allow_html=True)
+        read = get_auctions(unread_only=False, limit=100)
+        st.markdown(f'<div class="summary-bar">✅ รายการที่อ่านแล้ว (100 รายการล่าสุด)</div>', unsafe_allow_html=True)
         if not read:
             st.info("ยังไม่มีรายการที่อ่านแล้ว")
         else:

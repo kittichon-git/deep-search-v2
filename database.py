@@ -22,14 +22,22 @@ supabase: Client = create_client(SUPABASE_URL, SUPABASE_KEY)
 
 
 # ─── AUCTIONS ───────────────────────────────────────────
-def get_auctions(unread_only=True):
+def get_auctions(unread_only=True, limit: int = None):
     query = supabase.table("auctions").select("*")
     if unread_only:
-        query = query.eq("is_read", False)
-    return query.order("found_at", desc=True).execute().data
+        query = query.eq("is_read", False).order("found_at", desc=True)
+    else:
+        query = query.eq("is_read", True).order("read_at", desc=True, nullsfirst=False)
+    
+    if limit:
+        query = query.limit(limit)
+        
+    return query.execute().data
 
 def mark_auction_as_read(auction_id: str):
-    return supabase.table("auctions").update({"is_read": True}).eq("id", auction_id).execute().data
+    from datetime import datetime, timezone
+    now = datetime.now(timezone.utc).isoformat()
+    return supabase.table("auctions").update({"is_read": True, "read_at": now}).eq("id", auction_id).execute().data
 
 def insert_auction(auction_data: dict):
     try:
