@@ -254,6 +254,7 @@ def render_item(item, idx, is_read=False):
   <div class="meta">{te_span}{tf_span}{dt_span}</div>
   <div class="snippet {read_cls}" id="s{aid}">{snip_hl}</div>
 </div>
+<hr style="border:none;border-top:1px solid #e8eaed;margin:10px 0 0 0">
 <script>
 function markRead(id){{
   var ri=document.getElementById('ri'+id);
@@ -284,14 +285,13 @@ function markRead(id){{
     # Calculate dynamic height
     title_len  = len(item.get('title',''))
     snip_len   = len(item.get('snippet',''))
-    h = 48                          # base: site + title (1 line)
-    h += max(1, title_len // 45) * 30   # extra lines for long titles
-    h += 22                         # meta row (tags)
-    h += max(2, snip_len // 60) * 22    # snippet lines
-    h += 14                         # padding
-
+    h = 42                          # base: site + title (1 line)
+    h += max(1, title_len // 45) * 28   # extra lines for long titles
+    h += 20                         # meta row (tags)
+    h += max(2, snip_len // 60) * 21    # snippet lines
+    h += 12                         # divider + padding
+    
     components.html(html_src, height=h, scrolling=False)
-    st.markdown('<hr style="border:none;border-top:1px solid #e8eaed;margin:0 0 18px 0">', unsafe_allow_html=True)
 
 
 # ── SETTINGS HELPERS ──────────────────────────────────────
